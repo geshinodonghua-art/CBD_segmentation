@@ -1,0 +1,12 @@
+# .gitignore
+
+# ログファイルや一時ファイル
+wandb/
+__pycache__/
+*.log
+
+# 万が一紛れ込んでいた時のための保険
+*.pth
+*.npy
+*.dcm
+*.png
