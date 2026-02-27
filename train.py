@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jan 13 11:33:05 2026
-
+create_dictionary→transformation→dataloader→train→prediction
 @author: kadot
 """
 import os
