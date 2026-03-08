@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jan 13 11:33:05 2026
-create_dictionary→transformation→dataloader→train→prediction
+
 @author: kadot
 """
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+import numpy as np
 from DataLoader import DataLoad
 from monai.losses import DiceLoss
 import torch
@@ -15,8 +16,25 @@ from monai.networks.layers import Norm
 from monai.metrics import DiceMetric
 from monai.transforms import AsDiscrete
 from monai.inferers import sliding_window_inference
+import random
 import wandb
 wandb.login(key ="")
+
+def seed_everything(seed_value):
+    random.seed(seed_value)  # Pythonの乱数を固定
+    np.random.seed(seed_value)  # Numpyの乱数を固定
+    torch.manual_seed(seed_value)  # PyTorchの乱数を固定
+
+
+    if torch.cuda.is_available(): 
+        torch.cuda.manual_seed(seed_value)  # GPUを使う場合、PyTorchの乱数を固定
+        torch.cuda.manual_seed_all(seed_value)  # 全てのGPUを使う場合、PyTorchの乱数を固定
+        torch.backends.cudnn.deterministic = True  # cuDNNの決定論的モードをON
+        torch.backends.cudnn.benchmark = False  # ベンチマークモードをOFF
+
+
+seed_everything(42) 
+
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -34,12 +52,12 @@ if __name__ == '__main__':
         norm = Norm.BATCH,
         ).to(device)
     
-    loss_fnc = DiceLoss(sigmoid=True)
+    
     optimizer = Adam(model.parameters(), lr = 1e-3)
     #0.5以上で１にする（変更可能）
     post_pred = AsDiscrete(threshold=0.4)
     
-    max_epoch = 100
+    max_epoch = 300
     val_interval = 1
     
     best_metric = -1
@@ -47,8 +65,10 @@ if __name__ == '__main__':
     
     epoch_loss_values = list()
     metric_values = list()
+    #損失関数
+    loss_fnc = DiceLoss(sigmoid=True)
     #評価用関数
-    dice_metric = DiceMetric(include_background=False, reduction='mean')
+    dice_metric = DiceMetric(include_background=True, reduction='mean')
     
     for epoch in range(max_epoch):
         print("-" * 20)
@@ -85,10 +105,8 @@ if __name__ == '__main__':
                     dice_metric(y_pred=val_outputs, y=val_labels)
                 
                 metric = dice_metric.aggregate().item()
-                dice_metric.reset()
-                
                 metric_values.append(metric)
-                wandb.log({'ins/metric': metric},step = epoch+1) 
+                wandb.log({'val/metric': metric},step = epoch+1) 
                 
                 if metric > best_metric:
                     best_metric = metric
