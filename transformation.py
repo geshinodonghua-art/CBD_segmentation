@@ -12,10 +12,13 @@ from monai.transforms import (
     ScaleIntensityd, 
     RandCropByPosNegLabeld, 
     RandRotate90d, 
+    CopyItemsd,
+    MedianSmoothd,
     ToTensord
 )
 from monai.data import Dataset
 from create_dictionary import create_dictionary
+
 
 def transform():
     train_file, val_file, test_file, _ = create_dictionary(
@@ -28,7 +31,7 @@ def transform():
     train_trans = Compose([
         LoadImaged(keys = ["image","mask"]),
         EnsureChannelFirstd(keys = ["image","mask"],channel_dim='no_channel'),
-        ScaleIntensityd(keys = ["image"]),
+        ScaleIntensityd(keys = ["image","mask"]),
         RandCropByPosNegLabeld(
             keys = ["image","mask"],
             label_key="mask",
@@ -38,6 +41,7 @@ def transform():
             neg = 1,
             num_samples = 4
             ),
+        MedianSmoothd(keys=["image"], radius=1),
         #spatialは(height,width,depth)で0,1ならx-y平面で回転したりする（反転させたり）
         #90度単位での回転(90,180,・・・)１度単位だとvoxelの再計算で画像がボケる恐れがある
         RandRotate90d(keys=["image", "mask"], prob=0.5, spatial_axes=[1, 2]),
@@ -46,8 +50,10 @@ def transform():
     
     test_trans =  Compose([
         LoadImaged(keys = ["image","mask"]),
+        CopyItemsd(keys=["image"], times=1, names=["orig_image"]),
         EnsureChannelFirstd(keys = ["image","mask"],channel_dim='no_channel'),
-        ScaleIntensityd(keys = ["image"]),
+        MedianSmoothd(keys=["image"], radius=1),
+        ScaleIntensityd(keys = ["image","mask"]),
         ToTensord(keys = ["image","mask"])
         ])
     
