@@ -18,7 +18,7 @@ from monai.transforms import AsDiscrete
 from monai.inferers import sliding_window_inference
 import random
 import wandb
-wandb.login(key ="")
+wandb.login(key ="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")
 
 def seed_everything(seed_value):
     random.seed(seed_value)  # Pythonの乱数を固定
@@ -52,12 +52,12 @@ if __name__ == '__main__':
         norm = Norm.BATCH,
         ).to(device)
     
-    
+    loss_fnc = DiceLoss(sigmoid=True)
     optimizer = Adam(model.parameters(), lr = 1e-3)
     #0.5以上で１にする（変更可能）
     post_pred = AsDiscrete(threshold=0.4)
     
-    max_epoch = 300
+    max_epoch = 500
     val_interval = 1
     
     best_metric = -1
@@ -65,8 +65,6 @@ if __name__ == '__main__':
     
     epoch_loss_values = list()
     metric_values = list()
-    #損失関数
-    loss_fnc = DiceLoss(sigmoid=True)
     #評価用関数
     dice_metric = DiceMetric(include_background=True, reduction='mean')
     
@@ -105,6 +103,8 @@ if __name__ == '__main__':
                     dice_metric(y_pred=val_outputs, y=val_labels)
                 
                 metric = dice_metric.aggregate().item()
+                dice_metric.reset()
+                
                 metric_values.append(metric)
                 wandb.log({'val/metric': metric},step = epoch+1) 
                 
