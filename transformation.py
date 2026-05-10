@@ -22,10 +22,10 @@ from create_dictionary import create_dictionary
 
 def transform():
     train_file, val_file, test_file, _ = create_dictionary(
-        r"C:\DL\画像\原画像",
-        r"C:\DL\画像\マスク画像\総胆管",
-        r"C:\DL\画像\原npy",
-        r"C:\DL\画像\マスクnpy")
+        r"",
+        r"",
+        r"",
+        r"")
     
     
     train_trans = Compose([
@@ -44,7 +44,7 @@ def transform():
         MedianSmoothd(keys=["image"], radius=1),
         #spatialは(height,width,depth)で0,1ならx-y平面で回転したりする（反転させたり）
         #90度単位での回転(90,180,・・・)１度単位だとvoxelの再計算で画像がボケる恐れがある
-        RandRotate90d(keys=["image", "mask"], prob=0.5, spatial_axes=[1, 2]),
+        #RandRotate90d(keys=["image", "mask"], prob=0.5, spatial_axes=[1, 2]),
         ToTensord(keys=["image", "mask"])
         ])
     
@@ -54,7 +54,7 @@ def transform():
         EnsureChannelFirstd(keys = ["image","mask"],channel_dim='no_channel'),
         MedianSmoothd(keys=["image"], radius=1),
         ScaleIntensityd(keys = ["image","mask"]),
-        ToTensord(keys = ["image","mask"])
+        ToTensord(keys = ["image","mask","orig_image"])
         ])
     
     train_data = Dataset(data = train_file, transform = train_trans)
@@ -62,4 +62,3 @@ def transform():
     test_data = Dataset(data = test_file, transform = test_trans)
     
     return train_data, val_data, test_data
-
